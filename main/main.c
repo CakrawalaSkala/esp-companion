@@ -281,6 +281,8 @@ void control_task(void *pvParameters) {
         for(int i=0; i<3; i++) memory_bank[p][i] = 1500;
     }
 
+    int8_t att_counter = 0;
+
     while (1) {
 
         // 1. Request Data (Returns Physical Ch 8-16 + Echo Ch 1-7)
@@ -328,8 +330,11 @@ void control_task(void *pvParameters) {
             payload[i*2 + 1] = output_rc[i] >> 8;
         }
         msp_send_packet(MSP_CMD_SET_RAW_RC, payload, 32);
-
-        msp_send_packet(MSP_CMD_ATTITUDE, NULL, 0);
+        
+        if(att_counter++ >= 10){
+            msp_send_packet(MSP_CMD_ATTITUDE, NULL, 0);
+            att_counter = 0;
+        }
 
 
     }
@@ -366,7 +371,7 @@ void app_main(void) {
     init_uart();
     xDroneStateMutex = xSemaphoreCreateMutex();
     xTaskCreatePinnedToCore(sensor_task, "SENSOR", 4096, NULL, 6, NULL, 0);
-    xTaskCreatePinnedToCore(rx_task, "RX", 4096, NULL, 5, NULL, 0);
-    xTaskCreatePinnedToCore(control_task, "CTRL", 4096, NULL, 6, NULL, 1);
+    xTaskCreatePinnedToCore(rx_task, "RX", 4096, NULL, 21, NULL, 0);
+    xTaskCreatePinnedToCore(control_task, "CTRL", 4096, NULL, 22, NULL, 0);
     xTaskCreatePinnedToCore(log_task, "LOG", 4096, NULL, 3, NULL, 1);
 }
